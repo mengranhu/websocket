@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+    content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+
+<body>
+  traffic_last_hour:<span id="traffic_hour"></span><br />
+  traffic_last_day:<span id="traffic_day"></span><br />
+  <!-- gamma:<span id="gamma"></span><br />
+  xa:<span id="xa"></span><br />
+  ya:<span id="ya"></span><br />
+  za:<span id="za"></span><br /> -->
+</body>
+<script>
+  websk_state = 0
+  ws = new WebSocket("ws://192.168.1.177:9010");
+  ws.binaryType = "arraybuffer";
+  ws.onopen = function () {
+    console.log("connected");
+    var obj = {
+	"session": 0,
+	"id": 60,
+	"method": {
+		"service": "Subscribe",
+		"protocol": "pushCenter"
+		},
+	"params": {
+		"eventTypeList": ["mixTarget"],
+		"mixTargetList": ["nonMotor","human"],
+		"channelList": [1,2]
+		}
+    };
+    ws.send(JSON.stringify(obj));
+    websk_state = 1;
+  };
+
+  ws.onmessage = function (event) {
+    if (typeof event.data == 'string') {
+      buffer = event.data;
+      console.log("Received data string", buffer.length, buffer);
+      var j = JSON.parse(buffer);
+      if (j["type"] == "traffic" && j["body"]["dir"] == "far_away") {
+        document.getElementById('traffic_last_hour').innerHTML = j["body"]["last_hour"];
+        document.getElementById('traffic_last_day').innerHTML = j["body"]["last_day"];
+        // var obj = {
+        //   "type": "configure", "config_lanes_num": , "config_car_snap_threshold": 120.00,
+        //   "config_curve_coefficients": "0.000390 x^2+ 0.004817 x+ [-7.584216,-3.894985,-10.784216,-14.534216]", "config_curve_coefficients_vertical": "-0.000023 x^2+ 0.066464 x+ [-10.496196,-10.496196,-10.496196,-10.496196]"
+        // };
+        // ws.send(JSON.stringify(obj));
+      }
+      // else if(j["type"] == "Nocar" && (j["body"]["lane"]==-5))
+      // {
+      //   console.log(j["timestamp"],j["body"]["id"], j["body"]["z"]);
+      // }
+    }
+    else if (event.data instanceof ArrayBuffer) {
+      console.log("Received arraybuffer", event.data.byteLength, event.data);
+      // if(event.data.byteLength==1200)
+      // {
+      //     buffer = event.data;
+      //     theta_src=new DataView(buffer,2,2);
+      //     theta_src=theta_src.getUint16(0,true)*0.01;
+      //     // worker.postMessage(buffer, [buffer]);
+      // }
+    }
+  };
+
+  ws.onclose = function (evt) {
+    console.log("WebSocketClosed!");
+    websk_state = 0;
+  };
+
+  ws.onerror = function (evt) {
+    console.log("WebSocketError!");
+    websk_state = -1;
+  };
+
+    // if (window.DeviceOrientationEvent) {
+    //     window.addEventListener('deviceorientation', function (event) {
+    //         var a = document.getElementById('alpha')
+    //             b = document.getElementById('beta')
+    //             g = document.getElementById('gamma')
+    //             let alpha = event.alpha
+    //             let beta = event.beta
+    //             let gamma = event.gamma;
+
+    //         a.innerHTML = Math.round(alpha,2);
+    //         b.innerHTML = Math.round(beta,2);
+    //         g.innerHTML = Math.round(gamma,2);
+    //         if(websk_state==1)
+    //             ws.send(`GYRO:${alpha},${beta},${gamma}`)
+    //     }, false);
+    // } else {
+    //     document.querySelector('body').innerHTML = '你的浏览器不支持陀螺仪';
+    // }
+    // if (window.DeviceMotionEvent) {
+    //     window.addEventListener('devicemotion', function (event) {
+    //         var a1 = document.getElementById('xa'),
+    //             b1 = document.getElementById('ya'),
+    //             g1 = document.getElementById('za'),
+    //             x = event.acceleration.x,
+    //             y = event.acceleration.y,
+    //             z = event.acceleration.z;
+    //         a1.innerHTML = Math.round(x,2);
+    //         b1.innerHTML = Math.round(y,2);
+    //         g1.innerHTML = Math.round(z,2);
+    //         if(websk_state==1)
+    //             ws.send(`LAU :${x},${y},${z}`)
+    //     }, false);
+    // } else {
+    //     document.querySelector('body').innerHTML = '你的浏览器不支持加速度计';
+    // }
+</script>
+
+</html>
